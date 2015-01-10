@@ -1,7 +1,7 @@
 #!/bin/sh
 #Setup some stuff.
 pkgname=bash
-pkgver=4.1
+pkgver=4.3
 pkgrel=1
 pkgdesc="The GNU Bourne Again shell"
 arch=('i686' 'x86_64')
