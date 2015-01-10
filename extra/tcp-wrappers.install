@@ -1,0 +1,74 @@
+#!/bin/sh
+#Setup some stuff.
+
+
+pkgname=tcp-wrappers
+pkgname1=tcp_wrappers
+pkgver=_7.6-ipv6.1
+source=(http://ftp.uni-erlangen.de/debian-ipv6/pool/ipv6/tcp-wrappers/$pkgname${pkgver}.orig.tar.gz)
+patchfile1=(http://svn.cross-lfs.org/svn/repos/patches/tcp_wrappers/tcp_wrappers-7.6-ipv6-1.patch)
+md5sums=(' ')
+#md5check="$md5sums  $pkgname${pkgver}.orig.tar.gz"
+taropt="-xf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-build
+cd $pkgname-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+wget -q $patchfile1
+#echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+#    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+#	exit 1;
+#    fi
+#Check md5 if success
+#    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[01;33mThe checksums do match.\e[00m"
+#    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname${pkgver}.orig.tar.gz
+cd ${pkgname1}${pkgver}
+
+#Pre install stuff
+install -dv /lib 
+install -dv /usr/include
+install -dv /usr/lib
+install -dv /usr/sbin
+install -dv /usr/share/man/man{3,5,8}
+
+#Patch.
+patch -Np1 -i ../tcp_wrappers-7.6-ipv6-1.patch
+sed -i "s,^extern char \*malloc();,/* & */," scaffold.c
+sed -i "s/ln -s/ln -sf/" Makefile
+
+#Start the build.
+ 
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make REAL_DAEMON_DIR=/usr/sbin STYLE=-DPROCESS_OPTIONS linux
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B tcp-wrappers
+
+#This requires sudo to install.  
+
+paco -lD "make install"
+
+
+
+#rm the build directory.
+rm -R ../../$pkgname_$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname_$pkgver.\e[00m"
+pacoball -g $pkgname -d $PACOBALL/core
+echo -e "\e[01;33mCreated pacoball at $PACOBALL/core/\e[00m"
+
+

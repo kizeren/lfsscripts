@@ -1,0 +1,70 @@
+#!/bin/sh
+#Setup some stuff.
+
+
+pkgname=fcron
+pkgver=3.0.6
+source=(ftp://ftp.seul.org/pub/fcron/$pkgname-${pkgver}.src.tar.gz)
+md5sums=(' ')
+#md5check="$md5sums  $pkgname-$pkgver.src.tar.gz"
+taropt="-xf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+#echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+#    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+#	exit 1;
+#    fi
+#Check md5 if success
+#    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[01;33mThe checksums do match.\e[00m"
+#    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.src.tar.gz
+cd $pkgname-$pkgver
+
+
+
+#Patch.
+
+
+#Start the build.
+echo -e "\e[01;33mAdding Fcron user.\e[00m"
+groupadd -g 24 fcron &&
+useradd -c "Fcron User" -d /dev/null -u 24 -g fcron -s /bin/false fcron
+
+echo -e "\e[01;33mRunning configure.\e[00m"
+./configure --prefix=/usr --sysconfdir=/etc \
+    --localstatedir=/var --with-boot-install=no \
+     --without-sendmail
+
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B fcron
+
+#This requires sudo to install.  
+
+paco -lD "make install"
+
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+echo -e "\e[01;33mPlease run /etc/rc.d/init.d/rsyslog reload\e[00m"
+

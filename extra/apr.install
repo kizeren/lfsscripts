@@ -1,0 +1,75 @@
+#!/bin/sh
+#Setup some stuff.
+
+pkgname=apr
+pkgver=1.4.5
+pkgrel=1
+pkgdesc="The Apache Portable Runtime"
+arch=('i686' 'x86_64')
+url="http://apr.apache.org/"
+license=('APACHE')
+source=(http://www.apache.org/dist/apr/apr-${pkgver}.tar.bz2)
+md5sums=('8b53f5a5669d0597f2da889a2f576eb6')
+
+
+
+md5check="$md5sums  $pkgname-$pkgver.tar.bz2"
+taropt="-jxf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+	exit 1;
+    fi
+#Check md5 if success
+    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[01;33mThe checksums do match.\e[00m"
+    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.bz2
+cd $pkgname-$pkgver
+
+  export apr_cv_epoll_create1=no
+  export apr_cv_dup3=no
+  export apr_cv_accept4=no
+  export apr_cv_sock_cloexec=no
+
+
+
+
+#Start the build.
+echo -e "\e[01;33mRunning configure.\e[00m"
+  ./configure --prefix=/usr --includedir=/usr/include/apr-1 \
+    --with-installbuilddir=/usr/share/apr-1/build \
+    --enable-nonportable-atomics \
+    --with-devrandom=/dev/urandom --quiet
+
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B apr-util
+
+#This requires sudo to install.  
+echo -e "\e[01;33mInstalling $pkgname-$pkgver.\e[00m"
+paco -lD "make install"
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+

@@ -1,0 +1,58 @@
+#!/bin/sh
+#Setup some stuff.
+
+
+pkgname=cvs
+pkgver=1.11.23
+pkgrel=6
+pkgdesc="Concurrent Versions System - a source control system"
+arch=(i686 x86_64)
+url="http://cvs.nongnu.org"
+license=('GPL')
+optdepends=('openssh: for using cvs over ssh' 'inetutils: for using cvs over rsh')
+install=cvs.install
+source=(ftp://ftp.gnu.org/non-gnu/cvs/source/stable/${pkgver}/${pkgname}-${pkgver}.tar.bz2)
+
+taropt="-xf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget $source
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.bz2
+cd $pkgname-$pkgver
+
+#Configure options for the build.
+echo -e "\e[01;33mRunning Configure.\e[00m"
+
+./configure --prefix=/usr --quiet
+#Make
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+make --quiet
+make -C doc html txt dvi ps
+
+#Extras before install
+
+#Remove package before install.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B $pkgname
+#This requires sudo to install. 
+echo -e "\e[01;33mInstalling $pkgname-${_ver}.\e[00m" 
+paco -lD make install
+
+#Extras after install
+paco -lD+ "install -v -m755 -d /usr/share/doc/cvs-$pkgver"
+paco -lD+ "install -v -m644 FAQ README /usr/share/doc/cvs-$pkgver"
+paco -lD+ "install -v -m644 doc/*.pdf /usr/share/doc/cvs-$pkgver"
+
+
+#rm the build directory.
+cd ../../
+rm -R $pkgname-$pkgver-build
+rm $pkgname-$pkgver.tar.gz
+echo -e "\e[01;33mDone installing $pkgname-${_ver}.\e[00m"
+echo -e "\e[01;33mThis installed the following programs.  \e[0;35mcvs, cvsbug, rcs2log\e[00m"

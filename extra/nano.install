@@ -1,0 +1,42 @@
+#!/bin/sh
+#Setup some stuff.
+pkgname=nano
+pkgver=2.2.6
+pkgrel=1
+pkgdesc="Pico editor clone with enhancements"
+arch=('i686' 'x86_64')
+license=('GPL')
+url="http://www.nano-editor.org"
+groups=('base')
+depends=('ncurses' 'sh')
+backup=('etc/nanorc')
+source=(http://www.nano-editor.org/dist/v2.2/${pkgname}-${pkgver}.tar.gz)
+taropt="-xvf"
+
+#Get ready the source.
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+wget $source
+tar $taropt $pkgname-$pkgver.tar.gz
+cd $pkgname-$pkgver
+
+#Start the build.
+./configure --prefix=/usr --sysconfdir=/etc/nano \
+    --enable-color --enable-multibuffer --enable-nanorc --quiet
+make
+
+#Extras
+paco -lD "make install &&
+install -v -m644 -D doc/nanorc.sample /etc/nano/nanorc.sample &&
+install -v -m755 -d /usr/share/doc/nano-2.2.6 &&
+install -v -m644 doc/{,man/,texinfo/}*.html /usr/share/doc/nano-2.2.6"
+
+
+
+
+#rm the build directory.
+cd ../../
+rm -R $pkgname-$pkgver-build
+rm $pkgname-$pkgver.tar.gz
+
+echo All done!

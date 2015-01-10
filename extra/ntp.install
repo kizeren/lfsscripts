@@ -1,0 +1,70 @@
+#!/bin/sh
+#Setup some stuff.
+
+pkgname=ntp
+pkgver=4.2.4p7
+source=(http://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-4.2/$pkgname-${pkgver}.tar.gz)
+md5sums=(' ')
+#md5check="$md5sums  $pkgname-$pkgver.tar.gz"
+taropt="-xf"
+patchfile1=(http://svn.cross-lfs.org/svn/repos/patches/ntp/ntp-4.2.4p7-glibc-1.patch)
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+wget -q $patchfile1
+
+#echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+#    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+#	exit 1;
+#    fi
+#Check md5 if success
+#    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[01;33mThe checksums do match.\e[00m"
+#    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.gz
+cd $pkgname-$pkgver
+
+
+
+#Patch.
+
+patch -Np1 -i ../ntp-4.2.4p7-glibc-1.patch
+#Start the build.
+
+
+echo -e "\e[01;33mRunning configure.\e[00m"
+./configure --prefix=/usr --bindir=/usr/sbin \
+    --sysconfdir=/etc --with-binsubdir=sbin \
+    --enable-shared --cache-file=config.cache --quiet
+
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B ntp
+
+#This requires sudo to install.  
+
+paco -lD "make install && install -dv -m755 /usr/share/doc/ntp-4.2.4p7 && cp -Rv html /usr/share/doc/ntp-4.2.4p7/"
+
+
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+echo -e "\e[01;33mPlease run /etc/rc.d/init.d/rsyslog reload\e[00m"
+

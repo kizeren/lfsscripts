@@ -1,0 +1,88 @@
+#!/bin/sh
+#Setup some stuff.
+pkgname=openssh
+pkgver=5.8p2
+pkgrel=8
+pkgdesc='Free version of the SSH connectivity tools'
+arch=('i686' 'x86_64')
+license=('custom:BSD')
+url='http://www.openssh.org/portable.html'
+source=("ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/${pkgname}-${pkgver}.tar.gz")
+md5sums=('64798328d310e4f06c9f01228107520adbc8b3e5')
+required=('OpenSSL-0.9.8g')
+#md5check="$md5sums  $pkgname-${pkgver}.tar.gz"
+
+echo "This package requires $required.  If they are not installed this package may break.  CTRL+C top stop build now and install requirements first"
+Pause 20
+taropt="-zxf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-${pkgver}-build
+cd $pkgname-${pkgver}-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget $source
+
+
+#Check md5 fail if not correct.
+#    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+#        exit 1;
+#    fi
+#Check md5 if success
+#    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+#      echo -e "\e[01;33mThe checksums do match.\e[00m"
+#    fi
+
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-${pkgver}.tar.gz
+cd $pkgname-${pkgver}
+
+#Don't forget the patches!
+
+#Configure options for the build.
+echo -e "\e[01;33mCreating privledge user and group.\e[00m"
+install -v -m700 -d /var/lib/sshd &&
+chown -v root:sys /var/lib/sshd &&
+groupadd -g 50 sshd &&
+useradd -c 'sshd PrivSep' -d /var/lib/sshd -g sshd \
+    -s /bin/false -u 50 sshd
+
+echo -e "\e[01;33mRunning configure.\e[00m"
+
+./configure --prefix=/usr --sysconfdir=/etc/ssh --datadir=/usr/share/sshd \
+    --libexecdir=/usr/lib/openssh --with-md5-passwords \
+    --with-privsep-path=/var/lib/sshd \
+    --with-xauth=/usr/bin/xauth --quiet
+
+
+
+#Make
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+make --quiet
+
+#Extras before install
+
+#Remove package before install.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B openssh
+#This requires sudo to install.  
+echo -e "\e[01;33mInstalling $pkgname-${pkgver}.\e[00m"
+	paco -lD "make install"
+
+
+
+
+#Extras after install
+
+
+#rm the build directory.
+cd ../../
+rm -R $pkgname-${pkgver}-build
+
+echo -e "\e[01;33mDone installing $pkgname-${pkgver}.\e[00m"
+echo -e "\e[01;33mInstalled Programs: scp, sftp, sftp-server, slogin, ssh, sshd, ssh-add, ssh-agent, ssh-keygen, ssh-keyscan, and ssh-keysign\e[00m"
+echo -e "\e[01;33mInstalled Libraries: None \e[00m"

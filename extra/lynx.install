@@ -1,0 +1,67 @@
+#!/bin/sh
+#Setup some stuff.
+pkgname=lynx
+pkgver=2.8.7
+_pkgver=2-8-7
+pkgdesc="A text browser for the World Wide Web"
+license=('GPL')
+arch=('i686' 'x86_64')
+url="http://lynx.isc.org/"
+groups=('extra')
+source=(http://lynx.isc.org/release/${pkgname}${pkgver}.tar.gz)
+md5sums="e36d70f3f09b2d502055ca67f09e363c"
+md5check="$md5sums  $pkgname$pkgver.tar.gz"
+taropt="-zxf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget $source
+echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+	exit 1;
+    fi
+#Check md5 if success
+    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[01;33mThe checksums do match.\e[00m"
+    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname$pkgver.tar.gz
+cd $pkgname$_pkgver
+
+#Start the build.
+echo -e "\e[01;33mRunning configure.\e[00m"
+./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --with-ssl \
+    --enable-nls \
+    --mandir=/usr/share/man --quiet
+
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B lynx
+
+#This requires sudo to install.  
+echo -e "\e[01;33mInstalling $pkgname-$pkgver.\e[00m"
+paco -lD "make install"
+
+paco -lD+ "install -d /usr/share/doc/lynx && cp -rf lynx_help /usr/share/doc/lynx"
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+

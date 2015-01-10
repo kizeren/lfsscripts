@@ -1,0 +1,48 @@
+#!/bin/sh
+#Setup some stuff.
+pkgname=portmap
+name1=portmap_
+pkgver=6.0
+pkgdesc="A network utility to retrieve files from the Web"
+depends=('TCP-Wrappers')
+source=(http://neil.brown.name/portmap/$pkgname-$pkgver.tgz)
+taropt="-xf"
+
+read -p "The following dependencies are needed before installing. If they are already install 
+press enter.  If not control+x to stop and install $depends first."
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget $source
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tgz
+cd ${name1}$pkgver
+
+#Configure the build.
+echo -e "\e[01;33mRunning configure.\e[00m"
+
+#Make
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+make --quiet
+
+
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B $pkgname
+
+
+#This requires sudo to install. 
+echo -e "\e[01;33mInstalling $pkgname-$pkgver.\e[00m"
+paco -lD make install
+
+#rm the build directory.
+cd ../../
+rm -R $pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+
+pacoball -g ${name1}$pkgver -d $PACOBALL/core
+echo -e "\e[01;33mCreated pacoball at $PACOBALL/core/${name1}$pkgver.paco.tar.gz\e[00m"

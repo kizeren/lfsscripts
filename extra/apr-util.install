@@ -1,0 +1,67 @@
+#!/bin/sh
+#Setup some stuff.
+
+pkgname=apr-util
+pkgver=1.3.12
+pkgrel=2
+pkgdesc="The Apache Portable Runtime"
+arch=('i686' 'x86_64')
+url="http://apr.apache.org/"
+license=('APACHE')
+source=("http://www.apache.org/dist/apr/apr-util-${pkgver}.tar.bz2")
+md5sums=('0f671b037ca62751a8a7005578085560')
+required=('apr')
+echo "This package requires $required.  If they are not installed this package may break.  CTRL+C top stop build now and install requirements first"
+Pause 20
+
+md5check="$md5sums  $pkgname-$pkgver.tar.bz2"
+taropt="-jxf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+	exit 1;
+    fi
+#Check md5 if success
+    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[01;33mThe checksums do match.\e[00m"
+    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.bz2
+cd $pkgname-$pkgver
+
+
+#Start the build.
+echo -e "\e[01;33mRunning configure.\e[00m"
+        ./configure --prefix=/usr --with-apr=/usr \
+                --without-pgsql --without-mysql --without-sqlite2 --without-sqlite3 \
+                --without-ldap --quiet
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B apr-util
+
+#This requires sudo to install.  
+echo -e "\e[01;33mInstalling $pkgname-$pkgver.\e[00m"
+paco -lD "make install"
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+

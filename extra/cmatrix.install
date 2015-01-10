@@ -1,0 +1,63 @@
+#!/bin/sh
+#Setup some stuff.
+pkgname=cmatrix
+pkgver=1.2a
+pkgdesc="Lets you see the matrix in your console."
+license=('GPL3')
+arch=('i686' 'x86_64')
+url="http://www.asty.org/cmatrix/"
+groups=('extra')
+source=(http://www.asty.org/cmatrix/dist/$pkgname-$pkgver.tar.gz)
+md5sums="ebfb5733104a258173a9ccf2669968a1"
+md5check="$md5sums  $pkgname-$pkgver.tar.gz"
+taropt="-zxf"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget $source
+echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+	exit 1;
+    fi
+#Check md5 if success
+    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[01;33mThe checksums do match.\e[00m"
+    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.gz
+cd $pkgname-$pkgver
+
+#Start the build.
+echo -e "\e[01;33mRunning configure.\e[00m"
+./configure --prefix=/usr --mandir=/usr/share/man --quiet || return 1
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B cmatrix
+
+#This requires sudo to install.  
+echo -e "\e[01;33mInstalling $pkgname-$pkgver.\e[00m"
+paco -lD "make install"
+
+paco -lD+ "install -Dm644 mtx.pcf "$pkgdir/usr/share/fonts/misc/mtx.pcf""
+paco -lD+ "install -Dm644 matrix.fnt "$pkgdir/usr/share/kbd/consolefonts/matrix.fnt""
+paco -lD+ "install -m644 matrix.psf.gz "$pkgdir/usr/share/kbd/consolefonts""
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+

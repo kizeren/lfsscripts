@@ -1,0 +1,74 @@
+#!/bin/sh
+#Setup some stuff.
+
+
+pkgname=mpc
+pkgver=0.9
+source=(http://www.multiprecision.org/mpc/download/$pkgname-${pkgver}.tar.gz)
+md5sums=('0d6acab8d214bd7d1fbbc593e83dd00d')
+md5check="$md5sums  $pkgname-$pkgver.tar.gz"
+taropt="-xf"
+logdir="/var/local/tests"
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+	exit 1;
+    fi
+#Check md5 if success
+    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[01;33mThe checksums do match.\e[00m"
+    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.gz
+cd $pkgname-$pkgver
+
+
+
+#Patch.
+
+
+#Start the build.
+echo -e "\e[01;33mRunning configure. Output from configure can be found in $logdir/$pkgname-$pkgver.configure.log \e[00m"
+./configure --prefix=/usr > $pkgname-$pkgver.configure.log
+
+ 
+echo -e "\e[01;33mRunning Make. Output from make can be found in $logdir/$pkgname-$pkgver.make.log\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make > $pkgname-$pkgver.make.log
+
+echo -e "\e[01;33mRunning Make -k check. Output from make can be found in $logdir/$pkgname-$pkgver.tests.log\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make -k check > $pkgname-$pkgver.tests.log
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B $pkgname
+
+#This requires sudo to install.  
+
+paco -lD "make install"
+paco -lD+ "cp $pkgname-$pkgver.configure.log $logdir"
+paco -lD+ "cp $pkgname-$pkgver.make.log $logdir"
+paco -lD+ "cp $pkgname-$pkgver.tests.log $logdir"
+
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+pacoball -g $pkgname -d $PACOBALL/core
+echo -e "\e[01;33mCreated pacoball at $PACOBALL/core/\e[00m"
+
+

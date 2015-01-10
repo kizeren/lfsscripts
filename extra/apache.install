@@ -1,0 +1,84 @@
+#!/bin/sh
+#Setup some stuff.
+
+
+pkgname=httpd
+_pkgname=apache
+pkgver=2.2.8
+pkgrel=1
+pkgdesc='A high performance Unix-based HTTP server'
+url='http://www.apache.org/dist/httpd'
+license=('APACHE')
+source=(http://archive.apache.org/dist/httpd/httpd-${pkgver}.tar.bz2)
+md5sums=('76d2598a4797163d07cd50e5304aa7cd')
+md5check="$md5sums  $pkgname-$pkgver.tar.bz2"
+taropt="-jxf"
+patchfile1=(http://www.linuxfromscratch.org/patches/blfs/6.3/httpd-2.2.8-config-1.patch)
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+wget -q $patchfile1
+echo "$md5check" > md5sum.check
+
+#Check md5 fail if not correct.
+    if !  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[00;31mThe checksums do not match.\e[00m"
+	exit 1;
+    fi
+#Check md5 if success
+    if  echo "$md5check" | md5sum -c - >/dev/null ; then
+      echo -e "\e[01;33mThe checksums do match.\e[00m"
+    fi
+
+
+echo -e "\e[01;33mUnpackign the source package.\e[00m"
+tar $taropt $pkgname-$pkgver.tar.bz2
+cd $pkgname-$pkgver
+
+#Add apache user.
+echo -e "\e[01;33mAdding apache user.\e[00m"
+groupadd -g 25 apache &&
+useradd -c "Apache Server" -d /dev/null -g apache \
+        -s /bin/false -u 25 apache
+
+
+#Patch.
+patch -Np1 -i ../httpd-2.2.8-config-1.patch
+
+
+#Start the build.
+echo -e "\e[01;33mRunning configure.\e[00m"
+./configure --enable-layout=FHS --enable-mods-shared=all  --quiet 
+echo -e "\e[01;33mRunning Make.\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+
+make --quiet
+
+#Remove package beforing installing new version.
+echo -e "\e[01;33mRemoving old package.\e[00m"
+paco -B apache
+
+#This requires sudo to install.  
+echo -e "\e[01;33mInstalling $pkgname-$pkgver.\e[00m"
+paco -lD "make install"
+
+chown -v root:root /usr/lib/apache/httpd.exp \
+    /usr/sbin/{apxs,apachectl,dbmmanage,envvars{,-std}} \
+    /usr/share/man/man1/{dbmmanage,ht{dbm,digest,passwd}}.1 \
+    /usr/share/man/man8/{ab,apachectl,apxs,htcacheclean,httpd}.8 \
+    /usr/share/man/man8/{logresolve,rotatelogs,suexec}.8 &&
+chown -v -R apache:apache /srv/http
+
+sed -i -e "s/User daemon/User apache/" \
+       -e "s/Group daemon/Group apache/" \
+    /etc/apache/httpd.conf
+
+#rm the build directory.
+rm -R ../../$pkgname-$pkgver-build
+
+echo -e "\e[01;33mDone installing $pkgname-$pkgver.\e[00m"
+echo -e "\e[01;35mInstalled programs, ab, apachectl, apxs, dbmanage, htdigest, htpasswd, httpd, instdso.sh, logresolv, rotatelogs.\e[00m"
+

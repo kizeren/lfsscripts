@@ -1,0 +1,57 @@
+#!/bin/sh
+#Setup some stuff.
+pkgname=curl
+pkgver=7.21.7
+pkgdesc="Interactive process viewer"
+arch=('i686' 'x86_64')
+url="http://curl.haxx.se"
+license=('GPL')
+depends=('ncurses')
+source=(http://curl.haxx.se/download/${pkgname}-${pkgver}.tar.bz2)
+taropt="-xf"
+logdir="/var/local/tests"
+
+#Get ready the source.
+echo -e "\e[01;33mCreating build directory.\e[00m"
+mkdir $pkgname-$pkgver-build
+cd $pkgname-$pkgver-build
+echo -e "\e[01;33mGetting source package.\e[00m"
+wget -q $source
+tar $taropt $pkgname-$pkgver.tar.bz2
+cd $pkgname-$pkgver
+
+
+#Start the build.
+echo -e "\e[01;33mRunning configure. Output from configure can be found in $logdir/$pkgname-$pkgver.configure.log \e[00m"
+    ./configure \
+        --with-random=/dev/urandom \
+        --prefix=/usr \
+        --mandir=/usr/share/man \
+        --disable-dependency-tracking \
+        --enable-ipv6 \
+        --disable-ldaps \
+        --disable-ldap \
+        --enable-manual \
+        --enable-versioned-symbols \
+        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+        --without-libidn \
+        --enable-threaded-resolver > $pkgname-$pkgver.configure.log
+
+echo -e "\e[01;33mRunning Make. Output from make can be found in $logdir/$pkgname-$pkgver.make.log\e[00m"
+echo -e "\e[01;33mThis may take some time.\e[00m"
+make > $pkgname-$pkgver.make.log
+
+#Removed the previous installed package.
+paco -B htop
+#This requires sudo to install.  
+paco -lD make install
+paco -lD+ "cp $pkgname-$pkgver.configure.log $logdir"
+paco -lD+ "cp $pkgname-$pkgver.make.log $logdir"
+paco -lD+ "cp $pkgname-$pkgver.tests.log $logdir"
+
+#rm the build directory.
+cd ../../
+rm -R $pkgname-$pkgver-build
+rm $pkgname-$pkgver.tar.gz
+
+echo All done!
